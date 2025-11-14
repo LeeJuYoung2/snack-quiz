@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>과자 스무고개 | 세계 문화 부스</title>
+<meta name="description" content="아이 주도형 아키네이터 스타일: 과자 모양/포장/색 단서로 나라를 맞추고 문화 카드를 보여주는 웹앱" />
+<style>
+  :root{
+    /* 미니멀 화이트 · 애플 스타일 */
+    --bg:#F5F5F7;
+    --panel:#FFFFFF;
+    --muted:#7C7C80;
+    --text:#111111;
+    --brand:#007AFF;     /* iOS 블루 */
+    --ok:#34C759;
+    --no:#FF3B30;
+    --radius:18px;
+    --shadow:0 10px 30px rgba(0,0,0,0.08);
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", Segoe UI, Roboto, "Noto Sans KR", sans-serif;
+  }
+
+  /************ HEADER ************/
+  header{
+    position:sticky; top:0; z-index:10;
+    backdrop-filter: blur(18px);
+    background:rgba(245,245,247,0.92);
+    border-bottom:1px solid rgba(0,0,0,0.04);
+  }
+  .wrap{
+    max-width:1100px; margin:0 auto; padding:14px 20px;
+  }
+  h1{
+    margin:0;
+    font-size:20px;
+    font-weight:700;
+  }
+  .hint{
+    color:var(--muted);
+    font-size:13px;
+  }
+
+  /************ SEARCH ************/
+  .toolbar{
+    display:grid;
+    grid-template-columns: 1fr auto;
+    gap:10px;
+    margin-top:10px;
+  }
+  input[type=search]{
+    width:100%; padding:10px 14px;
+    border-radius:999px;
+    border:1px solid rgba(0,0,0,0.08);
+    background:#FFFFFF;
+    color:var(--text);
+    box-shadow:0 4px 12px rgba(0,0,0,0.04);
+    font-size:14px;
+  }
+  input[type=search]::placeholder{
+    color:rgba(124,124,128,0.7);
+  }
+
+  /************ PICK GRID ************/
+  .grid{
+    display:grid; gap:16px;
+    padding:20px 20px 90px;
+    max-width:1100px; margin:0 auto;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid rgba(0,0,0,0.06);
+    border-radius:22px;
+    overflow:hidden;
+    cursor:pointer;
+    box-shadow:0 6px 18px rgba(0,0,0,0.06);
+    transition:
+      transform .14s ease,
+      box-shadow .14s ease,
+      border-color .14s ease;
+  }
+  .card:hover{
+    transform:translateY(-3px);
+    box-shadow:0 10px 26px rgba(0,0,0,0.12);
+    border-color:rgba(0,0,0,0.1);
+  }
+  .card.selected{
+    border-color:var(--brand);
+    box-shadow:0 0 0 2px rgba(0,122,255,0.25) inset,
+               0 14px 30px rgba(0,122,255,0.20);
+  }
+  .thumb{
+    width:100%;
+    aspect-ratio:4/3;
+    object-fit:cover;
+    display:block;
+  }
+  .meta{
+    padding:10px 14px 12px;
+  }
+  .name{
+    font-weight:600;
+    font-size:15px;
+    margin:0;
+    color:var(--text);
+  }
+  .country{
+    color:var(--muted);
+    font-size:12px;
+    margin-top:4px;
+  }
+
+  /************ START BAR ************/
+  .startbar{
+    position:fixed; left:0; right:0; bottom:0; z-index:20;
+    display:none; justify-content:center; gap:10px; padding:10px 14px;
+    backdrop-filter: blur(18px);
+    background:rgba(248,248,250,0.96);
+    border-top:1px solid rgba(0,0,0,0.06);
+  }
+  .startbar.show{display:flex}
+  .startbar .btn{min-width:150px}
+
+  /************ QUIZ STAGE ************/
+  .stage{
+    width:100%;         /* ⭐ 변경: 부모의 가로 제한을 없앰 */
+    max-width:none;     /* ⭐ 변경: 900px 제한 해제 */
+
+    margin:0 auto;
+    padding:18px 20px;
+
+    min-height: calc(100vh - 140px);
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+}
+
+  .progress{
+    display:flex; gap:6px; margin:12px 0 16px;
+  }
+  .dot{
+    flex:1; height:6px;
+    border-radius:999px;
+    background:rgba(0,0,0,0.06);
+    overflow:hidden;
+  }
+  .dot>span{
+    display:block; height:100%; width:0;
+    background:linear-gradient(90deg,var(--brand),#34C759);
+  }
+
+  .bigcard{
+  background:var(--panel);
+  border-radius:26px;
+  border:1px solid rgba(0,0,0,0.06);
+  box-shadow:0 10px 26px rgba(0,0,0,0.10);
+
+  width:100%;           /* 🔥 가로 공간을 꽉 채움 */
+  max-width:900px;      /* 🔥 패드 기준 거의 꽉 차는 느낌 */
+  margin:0 auto;
+
+  padding:40px 36px 44px;   /* 박스가 시원해 보이도록 내부 여백 증가 */
+  }
+
+  .quiz-card{
+  width:100%;
+  max-width:900px;      /* 패드에서 꽉 차는 느낌 */
+  padding:40px 36px 44px; 
+  margin:0 auto;
+}
+
+  .qtitle{
+    font-size:18px;
+    font-weight:600;
+    margin:0 0 12px;
+    color:var(--text);
+  }
+  .options{
+    display:grid; gap:12px;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+
+  /************ BUTTONS ************/
+  .btn{
+    display:flex; align-items:center; justify-content:center;
+    padding:11px 14px;
+    border-radius:999px;
+    border:1px solid rgba(0,0,0,0.08);
+    background:#FFFFFF;
+    color:var(--text);
+    cursor:pointer; user-select:none;
+    min-height:48px;
+    font-size:14px;
+    font-weight:500;
+    transition:
+      transform .12s ease,
+      box-shadow .12s ease,
+      background .12s ease,
+      border-color .12s ease;
+  }
+  .btn:hover{
+    transform:translateY(-1px);
+    box-shadow:0 6px 16px rgba(0,0,0,0.10);
+    border-color:rgba(0,0,0,0.12);
+  }
+  .mini{
+    font-size:12px;
+    color:var(--muted);
+  }
+
+  /************ READY ************/
+  .ready{
+    display:none;
+    text-align:center;
+    margin-top:40px;
+  }
+  .ready.show{display:block}
+  .mascot{
+    width:110px; height:110px;
+    border-radius:26px;
+    border:1px solid rgba(0,0,0,0.05);
+    display:inline-grid; place-items:center;
+    margin:6px auto 14px;
+    background:#FFFFFF;
+    box-shadow:0 8px 20px rgba(0,0,0,0.08);
+  }
+  .mascot span{
+    font-size:48px;
+    animation:bob 1.3s ease-in-out infinite;
+  }
+  @keyframes bob{
+    0%,100%{transform:translateY(2px)}
+    50%{transform:translateY(-3px)}
+  }
+  .ready .btn{
+    font-size:18px;
+    padding:14px 20px;
+  }
+
+  /************ ANSWER CARD ************/
+  .answer{
+    display:none;
+    /* 가운데 작게 정렬 */
+    max-width: 800px;       /* 필요하면 700~900px 사이로 조절 가능 */
+    margin:18px auto;       /* 위 18px, 좌우 auto, 아래 18px */
+    padding:18px;
+    border-radius:20px;
+    border:1px solid rgba(0,0,0,0.06);
+    background:#FFFFFF;
+    box-shadow:0 12px 28px rgba(0,0,0,0.10);
+  }
+
+  /* ⭐ 정답 제목 스타일 추가 ⭐ */
+.ans-title{
+  font-size:18px;
+  font-weight:600;
+  margin-bottom:10px;
+  color:var(--text);
+}
+  .answer.show{
+    display:block;
+    animation:pop .12s ease-out;
+  }
+  @keyframes pop{
+    from{transform:translateY(6px); opacity:0}
+    to{transform:translateY(0); opacity:1}
+  }
+
+  .ans-top{
+    display:grid;
+    grid-template-columns: 220px 1fr;
+    gap:16px;
+    align-items:flex-start;
+  }
+  .ans-left{
+    width:100%;
+  }
+  .ans-photo{
+    width:100%;
+    aspect-ratio:4/3;
+    object-fit:cover;
+    border-radius:16px;
+    border:1px solid rgba(0,0,0,0.08);
+    box-shadow:0 8px 20px rgba(0,0,0,0.12);
+    background:#FFFFFF;
+  }
+  .flag-big{
+    width:250px;
+    height:auto;
+    border-radius:10px;
+    border:1px solid rgba(0,0,0,0.1);
+    display:block;
+    background:#FFFFFF;
+    box-shadow:0 6px 16px rgba(0,0,0,0.10);
+  }
+  .ans-country-name{
+    margin-top:4px;
+    font-size:14px;
+    font-weight:600;
+    color:var(--text);
+  }
+  .ans-map{
+    width:100%;
+    border-radius:12px;
+    border:1px solid rgba(0,0,0,0.08);
+    display:block;
+    background:#FFFFFF;
+    box-shadow:0 5px 14px rgba(0,0,0,0.08);
+  }
+
+  .big{
+    font-size:20px;
+    font-weight:700;
+  }
+  .actions{
+    display:flex; gap:10px; margin-top:14px;
+  }
+
+  .primary{
+    background:var(--brand);
+    color:#FFFFFF;
+    border-color:var(--brand);
+    box-shadow:0 8px 20px rgba(0,122,255,0.35);
+  }
+  .primary:hover{
+    box-shadow:0 10px 24px rgba(0,122,255,0.45);
+  }
+  .ghost{
+    background:#FFFFFF;
+    color:var(--text);
+  }
+
+  footer{
+    color:var(--muted);
+    font-size:12px;
+    text-align:center;
+    padding:18px;
+  }
+
+  .confetti{
+    position:fixed; inset:0; pointer-events:none;
+  }
+
+  /************ 패드 가로모드 반응형 (원래 로직 유지) ************/
+  @media screen and (max-width: 1024px) and (orientation: landscape) {
+
+    body {
+      font-size: 15px;
+    }
+
+    .ans-top {
+      grid-template-columns: 1fr !important;
+    }
+
+    #ansImg {
+      width: 100% !important;
+      height: auto !important;
+      margin: 0 auto;
+      display: block;
+    }
+
+    #ansKName {
+      font-size: 20px !important;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    .ans-right,
+    .ans-country-name,
+    #ansFlag {
+      text-align: center;
+      margin: 0 auto;
+    }
+
+    .flag-big {
+      width: 50px !important;
+      height: auto !important;
+    }
+
+    .ans-map {
+      width: 70% !important;
+      height: auto !important;
+      margin: 10px auto;
+      display: block;
+    }
+
+    #ansBlurb {
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .actions {
+      flex-direction: column;
+      gap: 14px;
+      align-items: center;
+      margin-top: 16px;
+    }
+
+    .actions .btn {
+      width: 70%;
+      font-size: 16px;
+      padding: 12px;
+    }
+
+    .grid {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+
+    .card .thumb {
+      aspect-ratio: 4 / 3;
+    }
+  }
+  
+  /* 시작페이지(ready) 전용 꾸미기 */
+.ready-card{
+  text-align:center;
+}
+
+.ready-title{
+  margin:8px 0 4px;
+  font-size:20px;
+  font-weight:600;
+}
+
+.ready-sub{
+  margin:0 0 12px;
+  font-size:14px;
+  color:var(--muted);
+}
+
+/* 3단계 단서 뱃지 */
+.ready-steps{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  margin:8px 0 4px;
+}
+.ready-step{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+  padding:8px 10px;
+  min-width:70px;
+  border-radius:14px;
+  background:#F5F5F7;
+  border:1px solid rgba(0,0,0,0.06);
+}
+.ready-step-num{
+  width:22px; height:22px;
+  border-radius:999px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
+  font-weight:600;
+  color:#FFFFFF;
+  background:var(--brand);
+}
+.ready-step-label{
+  font-size:13px;
+  font-weight:500;
+  color:var(--text);
+}
+
+/* 시작 버튼 + 팁 */
+.ready-btn{
+  margin:14px auto 0;  /* 위 14px, 좌우 auto(가운데 정렬), 아래 0 */
+  width:100%;
+  max-width:260px;
+}
+
+.ready-tip{
+  margin-top:8px;
+}
+
+</style>
+
+
+
+
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>과자 스무고개</h1>
+      <div class="toolbar" id="pickToolbar">
+        <input id="search" type="search" placeholder="과자 검색 (이름/나라)" aria-label="과자 검색" />
+      </div>
+    </div>
+  </header>
+
+  <!-- 선택 화면 -->
+  <main id="pick" class="grid" aria-live="polite"></main>
+
+  <!-- 하단 시작 바 (선택 후 노출) -->
+  <div id="startBar" class="startbar" aria-live="polite">
+    <button id="startBtn" class="btn primary" disabled>시작하기 ▶</button>
+    <button id="cancelBtn" class="btn ghost">취소</button>
+  </div>
+  
+<!-- 퀴즈 화면 -->
+<section id="quiz" style="display:none">
+  <div class="stage">
+
+    <!-- ⭐ 문제 bigcard ⭐ -->
+    <article class="bigcard">
+
+      <div id="questionZone">
+
+        <div class="progress" aria-hidden="true">
+          <div class="dot"><span id="p1"></span></div>
+          <div class="dot"><span id="p2"></span></div>
+          <div class="dot"><span id="p3"></span></div>
+        </div>
+
+        <h2 id="qTitle" class="qtitle"></h2>
+        <div id="opt" class="options"></div>
+
+      </div> <!-- questionZone -->
+
+    </article>
+    <!-- ⭐ 문제 bigcard 끝 ⭐ -->
+
+
+    <!-- ⭐ 정답 카드(answer) — bigcard 밖에 위치 ⭐ -->
+    <div id="answer" class="answer" role="region" aria-live="polite">
+     <h2 class="ans-title">이 과자는...?</h2>
+      <div class="ans-top">
+
+        <div class="ans-left">
+          <img id="ansImg" class="ans-photo" alt="정답 과자 이미지"/>
+          <p id="ansKName"
+             style="margin-top:8px;font-weight:700;text-align:center;font-size:18px;">
+          </p>
+        </div>
+
+        <div class="ans-right">
+
+          <div class="mini" style="margin-top:8px">
+            <img id="ansFlag" class="flag-big" alt="국기"/>
+            <div id="ansCountry" class="ans-country-name"></div>
+          </div>
+
+          <div class="mini" style="margin-top:10px">
+            <img id="ansMap" class="ans-map" alt="지도"/>
+          </div>
+
+          <p id="ansBlurb" class="mini" style="margin-top:10px"></p>
+
+          <div class="actions">
+            <button class="btn primary" id="nextBtn">다음 친구 ➜</button>
+            <button class="btn ghost" id="againBtn">다시 하기</button>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+    <!-- 정답 박스 끝 -->
+
+  </div>
+</section>
+
+
+
+
+
+  <!-- 준비 화면 (아이들이 처음 보는 화면) -->
+<section id="ready" class="ready" aria-live="polite" style="display:none">
+  <div class="stage">
+    <div class="bigcard ready-card">
+      <div class="mascot"><span>🍪</span></div>
+
+      <h2 class="ready-title">과자 스무고개를 시작해 볼까?</h2>
+      <p class="ready-sub">
+        지금 가지고 있는 과자를 보고,<br />
+        쿠코에게 <b>세 가지 단서</b>만 알려줘!
+      </p>
+
+      <!-- 3단계 단서 안내 -->
+      <div class="ready-steps">
+        <div class="ready-step">
+          <span class="ready-step-num">1</span>
+          <span class="ready-step-label">모양</span>
+        </div>
+        <div class="ready-step">
+          <span class="ready-step-num">2</span>
+          <span class="ready-step-label">색</span>
+        </div>
+        <div class="ready-step">
+          <span class="ready-step-num">3</span>
+          <span class="ready-step-label">과자 종류</span>
+        </div>
+      </div>
+
+      <p class="mini" style="margin-top:6px;">
+        이 세 가지만 말해도, 쿠코가 어떤 과자인지 맞춰 볼게!
+      </p>
+
+      <button id="readyGo" class="btn primary ready-btn">
+        첫 번째 질문으로 가기 ▶
+      </button>
+
+    </div>
+  </div>
+</section>
+
+
+  <canvas id="confetti" class="confetti"></canvas>
+
+  <footer>© 세계 문화 부스 · ESC로 선택 화면으로 돌아가기</footer>
+
+<script>
+/********************************************
+ * 🔧 설정 1: 질문 수정 구간 (질문/보기만 고치면 됨)
+ * - title : 쿠코 말풍선 + 화면에 보이는 질문 문장
+ * - options : 버튼에 찍히는 보기 문장
+ ********************************************/
+const QUESTIONS = [
+  {
+    key: 'shape',
+    title: '이 과자의 모양은 어떤가요?',
+    options: ['동그랗다', '네모나다', '별/특이한 모양', '막대모양', '조각 과자']
+  },
+  {
+    key: 'color',
+    title: '과자 색은 어떤가요?',
+    options: ['노랑/베이지', '갈색', '여러 색', '초록', '빨강/분홍']
+  },
+  {
+    key: 'type',
+    title: '무슨 종류의 과자인가요?',
+    options: [
+      '부드러운 빵/케이크',
+      '젤리/말랑한 과자',
+      '초콜릿/바',
+      '크래커/비스킷/웨하스',
+      '칩(바삭한 과자)'
+    ]
+  }
+];
+
+
+/********************************************
+ * 🔧 설정 2: 과자 등록 구간
+ *  - 이 배열 안에 항목 추가/삭제/수정만 하면 콘텐츠 교체 가능
+ *  - thumb : 목록에서 보이는 썸네일 이미지
+ *  - image : 정답 카드에서 크게 보이는 이미지
+ *  - flag  : 국기 이미지
+ *  - meta  : 질문 보기와 연결되는 속성 (문자 그대로 맞춰야 함)
+ *  - culture.blurb : 문화 설명 문장
+ *
+ *  📁 파일 예시 위치 (index.html 기준)
+ *  /img/pocky_thumb.jpg
+ *  /img/pocky.jpg
+ *  /img/flags/jp.png
+ ********************************************/
+const SNACKS = [
+  {
+    id:'baumcuchen',
+    name:'Baumkuchen',
+    kname:'바움쿠헨',
+    country:'독일',
+    code:'de',
+    thumb:'img/baumcuchen.png',
+    image:'img/baumcuchen.png',
+    flag:'img/flags/de.png',
+    map:'img/maps/de.png',
+    meta:{
+      shape:['동그랗다'],
+      color:['노랑/베이지'],
+      type:['부드러운 빵/케이크']
+    },
+    culture:{ blurb:'바움쿠헨은 독일에서 만들어진 전통 케이크로, 나무 나이테처럼 보이는 모양이 특징이에요.' }
+  },
+
+  {
+    id:'bounty',
+    name:'Bounty',
+    kname:'바운티',
+    country:'미국',
+    code:'us',
+    thumb:'img/bounty.png',
+    image:'img/bounty.png',
+    flag:'img/flags/us.png',
+    map:'img/maps/us.png',
+    meta:{
+      shape:['막대모양'],
+      color:['갈색'],
+      type:['초콜릿/바']
+    },
+    culture:{ blurb:'코코넛 디저트 문화에서 영감을 받아 만든 미국의 코코넛 초코바예요.' }
+  },
+
+  {
+    id:'combos',
+    name:'Combos',
+    kname:'콤보스',
+    country:'미국',
+    code:'us',
+    thumb:'img/combos.png',
+    image:'img/combos.png',
+    flag:'img/flags/us.png',
+    map:'img/maps/us.png',
+    meta:{
+      shape:['막대모양'],
+      color:['노랑/베이지'],
+      type:['크래커/비스킷/웨하스']
+    },
+    culture:{ blurb:'짭짤한 치즈 맛과 바삭함이 미국의 영화관·스포츠 경기장에서 먹는 간식 문화를 떠올리게 해요!' }
+  },
+
+  {
+    id:'cumulonimbus',
+    name:'Cumulonimbus Jelly',
+    kname:'구름 젤리',
+    country:'프랑스',
+    code:'fr',
+    thumb:'img/cumulonimbus.png',
+    image:'img/cumulonimbus.png',
+    flag:'img/flags/fr.png',
+    map:'img/maps/fr.png',
+    meta:{
+      shape:['별/특이한 모양'],
+      color:['여러 색'],
+      type:['젤리/말랑한 과자']
+    },
+    culture:{ blurb:'알록달록한 색과 말랑한 식감이 프랑스의 동화적 감성과 예술 문화를 닮아서, 먹을 때마다 작은 축제가 열려요!' }
+  },
+
+  {
+    id:'eurocake',
+    name:'Eurocake',
+    kname:'유로케이크',
+    country:'태국',
+    code:'th',
+    thumb:'img/eurocake.png',
+    image:'img/eurocake.png',
+    flag:'img/flags/th.png',
+    map:'img/maps/th.png',
+    meta:{
+      shape:['네모나다'],
+      color:['노랑/베이지'],
+      type:['부드러운 빵/케이크']
+    },
+    culture:{ blurb:'달콤하고 부드러운 케이크 맛은 달콤한 디저트를 즐기는 태국의 시장 문화와 잘 어울려요.' }
+  },
+
+  {
+    id:'jacquet',
+    name:'Jacquet',
+    kname:'자케트 브리오슈',
+    country:'프랑스',
+    code:'fr',
+    thumb:'img/jacquet.png',
+    image:'img/jacquet.png',
+    flag:'img/flags/fr.png',
+    map:'img/maps/fr.png',
+    meta:{
+      shape:['네모나다'],
+      color:['노랑/베이지'],
+      type:['부드러운 빵/케이크']
+    },
+    culture:{ blurb:'풍부한 버터 향과 부드러움이 프랑스 빵집 문화를 그대로 담아, 아침 햇살 같은 맛이 나요!' }
+  },
+
+  {
+    id:'kopobka',
+    name:'Kopobka',
+    kname:'코로브카 와플',
+    country:'러시아',
+    code:'ru',
+    thumb:'img/kopobka.png',
+    image:'img/kopobka.png',
+    flag:'img/flags/ru.png',
+    map:'img/maps/ru.png',
+    meta:{
+      shape:['네모나다'],
+      color:['노랑/베이지'],
+      type:['크래커/비스킷/웨하스']
+    },
+    culture:{ blurb:'고소하고 달콤한 맛이 러시아의 ‘카라멜 우유 간식(Коробка)’ 전통을 전해 주는 듯 따뜻해요.' }
+  },
+
+  {
+    id:'pierrot',
+    name:'Pierrot Gourmand',
+    kname:'피에로 구르망',
+    country:'프랑스',
+    code:'fr',
+    thumb:'img/pierrot.png',
+    image:'img/pierrot.png',
+    flag:'img/flags/fr.png',
+    map:'img/maps/fr.png',
+    meta:{
+      shape:['별/특이한 모양'],
+      color:['여러 색'],
+      type:['젤리/말랑한 과자']
+    },
+    culture:{ blurb:'다양한 모양과 색이 프랑스의 축제·퍼레이드 문화를 떠올리게 해, 먹는 즐거움이 두 배예요!' }
+  },
+
+  {
+    id:'pure',
+    name:'Pure',
+    kname:'퓨레 젤리',
+    country:'일본',
+    code:'jp',
+    thumb:'img/pure.png',
+    image:'img/pure.png',
+    flag:'img/flags/jp.png',
+    map:'img/maps/jp.png',
+    meta:{
+      shape:['별/특이한 모양'],
+      color:['여러 색'],
+      type:['젤리/말랑한 과자']
+    },
+    culture:{ blurb:'상큼한 과일 맛과 귀여운 모양이 일본의 캐릭터·카와이 문화와 닮아서 기분까지 달콤해져요.' }
+  },
+
+  {
+    id:'skyflakes',
+    name:'SkyFlakes',
+    kname:'스카이플레이크',
+    country:'필리핀',
+    code:'ph',
+    thumb:'img/skyflakes.png',
+    image:'img/skyflakes.png',
+    flag:'img/flags/ph.png',
+    map:'img/maps/ph.png',
+    meta:{
+      shape:['네모나다'],
+      color:['노랑/갈색'],
+      type:['크래커/비스킷/웨하스']
+    },
+    culture:{ blurb:'담백한 맛과 포만감 있는 식감이 필리핀의 가족 중심 식문화와 닮아 따뜻하고 편안해요.' }
+  },
+
+  {
+    id:'piattos',
+    name:'Piattos',
+    kname:'피아토스',
+    country:'필리핀',
+    code:'ph',
+    thumb:'img/piattos.png',
+    image:'img/piattos.png',
+    flag:'img/flags/ph.png',
+    map:'img/maps/ph.png',
+    meta:{
+      shape:['조각 과자'],
+      color:['여러 색'],
+      type:['칩(바삭한 과자)']
+    },
+    culture:{ blurb:'바삭바삭한 칩 맛이 필리핀의 활기찬 길거리 음식 문화와 잘 어울리는 신나는 간식이에요!' }
+  },
+
+  {
+    id:'tipo',
+    name:'Tipo',
+    kname:'티포 에그쿠키',
+    country:'베트남',
+    code:'vn',
+    thumb:'img/tipo.png',
+    image:'img/tipo.png',
+    flag:'img/flags/vn.png',
+    map:'img/maps/vn.png',
+    meta:{
+      shape:['네모나다'],
+      color:['노랑/베이지'],
+      type:['크래커/비스킷/웨하스']
+    },
+    culture:{ blurb:'부드럽고 달콤한 쿠키가 베트남의 커피·디저트 문화와 찰떡궁합이라 한 입마다 여유로운 느낌이 나요.' }
+  }
+];
+
+
+
+
+/************** 전역 상태 **************/
+let state = {
+  mode: 'pick',    // 'pick' | 'ready' | 'quiz' | 'answer'
+  snack: null,     // 선택된 과자 객체
+  step: 0,         // 0..(질문 개수-1)
+  pending: null    // 선택 화면에서 임시 선택
+};
+
+const $  = (s,el=document)=>el.querySelector(s);
+const $$ = (s,el=document)=>Array.from(el.querySelectorAll(s));
+
+const elPick       = $('#pick');
+const elQuiz       = $('#quiz');
+const elReady      = $('#ready');
+const elReadyGo    = $('#readyGo');
+const elSearch     = $('#search');
+const elQTitle     = $('#qTitle');
+const elOpt        = $('#opt');
+const elAnswer     = $('#answer');
+const elAnsFlag    = $('#ansFlag');
+const elAnsCountry = $('#ansCountry');
+const elAnsBlurb   = $('#ansBlurb');
+const elAnsImg     = $('#ansImg');
+const elNext       = $('#nextBtn');
+const elAgain      = $('#againBtn');
+const elStartBar   = document.getElementById('startBar');
+const elStartBtn   = document.getElementById('startBtn');
+const elCancelBtn  = document.getElementById('cancelBtn');
+const elAnsKName   = $('#ansKName');
+const elStage      = document.querySelector('#quiz .stage');
+
+
+// 프로그레스 바 업데이트
+function setProgress(step){
+  const spans = [$('#p1'), $('#p2'), $('#p3')];
+  spans.forEach((sp,i)=> sp.style.width = (i<=step ? '100%' : '0'));
+}
+
+/************** 쿠코 말풍선 헬퍼 (있으면 사용) **************/
+function cucoSetMode(mode){
+  if (window.cucoAPI && typeof window.cucoAPI.setMode === 'function'){
+    window.cucoAPI.setMode(mode);
+  }
+}
+function cucoSetLine(text){
+  if (window.cucoAPI && typeof window.cucoAPI.setLine === 'function'){
+    window.cucoAPI.setLine(text);
+  }
+}
+
+/************** 선택 화면 **************/
+function renderPick(){
+  state.mode='pick';
+  state.pending = null;
+  state.snack   = null;
+  state.step    = 0;
+
+  elStartBar.classList.remove('show');
+  elStartBtn.disabled = true;
+
+  elQuiz.style.display  ='none';
+  elReady.style.display ='none';
+  elPick.style.display  ='grid';
+  elAnswer.classList.remove('show');
+
+  // 쿠코: 선택 화면에서는 안내 멘트 모드
+  cucoSetMode('idle');
+
+  const q = (elSearch.value||'').trim().toLowerCase();
+  const items = SNACKS.filter(s => (s.name+s.country).toLowerCase().includes(q));
+
+  elPick.innerHTML = '';
+  if (!items.length){
+    elPick.innerHTML = `<p style="grid-column:1/-1; color:var(--muted); text-align:center">검색 결과가 없어요.</p>`;
+    return;
+  }
+
+  for (const s of items){
+    const card = document.createElement('article');
+    card.className='card';
+    card.tabIndex=0;
+    card.dataset.id = s.id;
+    card.innerHTML = `
+      <img src="${s.thumb||s.image}" alt="${s.name} 썸네일" class="thumb"/>
+      <div class="meta">
+        <p class="name">${s.name}</p>
+        <p class="country">${s.country}</p>
+      </div>`;
+
+    const selectThis = ()=>{
+      $$('.card', elPick).forEach(c=>c.classList.remove('selected'));
+      card.classList.add('selected');
+      state.pending = s;
+      elStartBar.classList.add('show');
+      elStartBtn.disabled = false;
+    };
+
+    card.addEventListener('click', selectThis);
+    card.addEventListener('keydown', (e)=>{
+      if(e.key==='Enter' || e.key===' '){
+        e.preventDefault();
+        selectThis();
+      }
+    });
+
+    elPick.appendChild(card);
+  }
+}
+
+/************** 준비 화면 **************/
+function showReady(){
+  if(!state.pending) return;
+  state.mode  ='ready';
+  state.snack = state.pending;
+  state.step  = 0;
+
+  elPick.style.display  ='none';
+  elQuiz.style.display  ='none';
+  elReady.style.display ='block';
+
+  elStartBar.classList.remove('show');
+  elStartBtn.disabled=true;
+
+  // 쿠코: "곧 시작" 느낌으로
+  cucoSetMode('quiz');
+  cucoSetLine('준비되면 "시작하기" 버튼을 눌러줘! 🍪');
+}
+
+/************** 퀴즈 로직 **************/
+function startQuiz(){
+  if(!state.snack) return;
+  state.mode='quiz';
+  state.step=0;
+
+  elReady.style.display='none';
+  elPick.style.display='none';
+  elQuiz.style.display='block';
+
+  // ⭐ 문제 화면에서는 가운데 정렬
+  if (elStage) elStage.style.justifyContent = 'center';
+
+  elAnswer.classList.remove('show');
+  setProgress(-1); // 초기화
+
+
+    // 쿠코: 퀴즈 모드로 전환 + 안내 멘트 한 번만
+  cucoSetMode('quiz');
+  cucoSetLine('위에 있는 질문을 읽고 버튼을 골라줘! 🤖');
+
+  askCurrent();
+}
+
+function askCurrent(){
+  document.querySelector(".bigcard").style.display = "block";  // ⭐ 문제 박스 다시 보여줌
+  document.querySelector('.progress').style.display = 'flex'; // ⭐ 문제 모드에서 다시 표시
+  const q = QUESTIONS[state.step];
+  elQTitle.style.display = "block";  // ⭐ 문제 페이지에서는 다시 보이게
+  document.getElementById('questionZone').style.display = "block"; // ⭐ 문제 페이지에서 다시 보이기
+
+
+  if(!q){
+    // 모든 질문이 끝났으면 정답 공개
+    return showAnswer();
+  }
+
+  setProgress(state.step-1);
+  elQTitle.textContent = q.title;
+  elOpt.innerHTML = '';
+
+  // 쿠코 말풍선에도 현재 질문 표시
+  cucoSetMode('quiz');
+
+  q.options.forEach(opt => {
+    const b = document.createElement('button');
+    b.className='btn';
+    b.textContent = opt;
+    b.addEventListener('click', ()=> onPickOption(q.key, opt));
+    elOpt.appendChild(b);
+  });
+}
+
+function onPickOption(key, value){
+  // 현재 구현은 "과자 맞추기 놀이"이기 때문에
+  // 실제로는 선택값을 저장하지 않고 연출용으로만 사용.
+  // 필요하면 여기에서 state에 기록하면 됨.
+  state.step++;
+  if(state.step >= QUESTIONS.length){
+    showAnswer();
+  } else {
+    askCurrent();
+  }
+}
+
+function showAnswer(){
+  state.mode='answer';
+  document.querySelector(".bigcard").style.display = "none";   // ⭐ 문제 박스 완전 제거
+
+    // ⭐ 정답 화면에서는 위에서부터 쌓이게 (스크롤 덜 나오게)
+  if (elStage) elStage.style.justifyContent = 'flex-start';
+
+  setProgress(QUESTIONS.length-1);
+  document.querySelector('.progress').style.display = 'none';
+  elOpt.innerHTML='';
+
+  elQTitle.textContent = "";    // ⭐ 문제 질문 지우기 (중요!)
+  elQTitle.style.display = "none";   // ⭐ 박스를 완전히 숨김
+  document.getElementById('questionZone').style.display = "none";  // ⭐ 완전 숨기기
+
+
+
+  const s = state.snack;
+  if(!s) {
+    console.warn('선택된 과자가 없습니다.');
+    return;
+  }
+
+  // 과자 이미지 / 이름 / 나라
+  if (elAnsImg)      elAnsImg.src           = s.image || s.thumb || '';
+  if (elAnsCountry)  elAnsCountry.textContent = s.country || '';
+  if (elAnsKName) elAnsKName.textContent = s.kname || '';
+
+
+  // 국기
+  if (elAnsFlag && s.flag) {
+    elAnsFlag.src = s.flag;
+  }
+
+  // ⭐ 여기만 이렇게 수정 ⭐
+  const mapEl = document.getElementById('ansMap');
+  if (mapEl && s.map) {
+    mapEl.src = s.map;
+  }
+
+  // 문화 설명
+  if (elAnsBlurb) {
+    elAnsBlurb.textContent = (s.culture && s.culture.blurb) ? s.culture.blurb : '';
+  }
+
+  elAnswer.classList.add('show');
+
+  cucoSetMode('answer');
+  cucoSetLine(`정답은 "${s.name}"! ${s.country} 과자야 🎉`);
+
+  boom();
+}
+
+
+
+
+/************** 이벤트 바인딩 **************/
+elSearch.addEventListener('input', renderPick);
+
+elStartBtn.addEventListener('click', ()=>{
+  if(state.pending) showReady();
+});
+
+elCancelBtn.addEventListener('click', ()=>{
+  state.pending=null;
+  elStartBar.classList.remove('show');
+  elStartBtn.disabled=true;
+  $$('.card', elPick).forEach(c=>c.classList.remove('selected'));
+});
+
+elReadyGo.addEventListener('click', startQuiz);
+
+elNext.addEventListener('click', renderPick);  // 다음 친구
+elAgain.addEventListener('click', showReady);  // 같은 과자로 다시 하기
+
+// ESC로 언제든 선택 화면으로 복귀
+window.addEventListener('keydown', (e)=>{
+  if(e.key==='Escape') renderPick();
+});
+
+/************** 간단 콘페티 **************/
+const cf  = document.getElementById('confetti');
+const ctx = cf.getContext('2d');
+let confettiPieces = [];
+
+function resize(){
+  cf.width  = innerWidth;
+  cf.height = innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+function boom(){
+  confettiPieces = Array.from({length:120}, () => ({
+    x: Math.random()*cf.width,
+    y: -10,
+    vy: 2+Math.random()*4,
+    vx: -2+Math.random()*4,
+    size: 3+Math.random()*4,
+    rot: Math.random()*Math.PI,
+    vr: -0.2+Math.random()*0.4
+  }));
+  requestAnimationFrame(tick);
+}
+
+function tick(){
+  ctx.clearRect(0,0,cf.width, cf.height);
+  confettiPieces.forEach(p=>{
+    p.x += p.vx;
+    p.y += p.vy;
+    p.rot += p.vr;
+
+    ctx.save();
+    ctx.translate(p.x,p.y);
+    ctx.rotate(p.rot);
+    ctx.fillStyle = ['#7bb3ff','#8ae0ff','#7cf3c2','#ffb3c3','#ffe08a'][Math.floor(Math.random()*5)];
+    ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size);
+    ctx.restore();
+  });
+  confettiPieces = confettiPieces.filter(p=> p.y < cf.height+20);
+  if(confettiPieces.length) requestAnimationFrame(tick);
+}
+
+// 초기 렌더
+renderPick();
+</script>
+
+<!-- 🍪 CuCo Mascot (투명 PNG 사용, 말풍선에 질문 표시) -->
+<div id="cuco">
+  <div class="cuco-bubble" role="status" aria-live="polite">
+    안녕! 난 쿠코야 🍪 너의 과자 취향을 예측해볼게!
+  </div>
+
+  <div class="cuco-wrap">
+    <!-- ⚠️ images/cuco.png : 배경 누끼 딴 투명 PNG 파일로 교체해서 사용 -->
+    <img class="cuco-img"
+         src="./images/cuco.png"
+         alt="CuCo mascot"
+         onload="console.log('CuCo loaded')"
+         onerror="console.warn('CuCo NOT FOUND: ./images/cuco.png')" />
+    <span class="cuco-antenna"></span>
+    <span class="cuco-hand" aria-hidden="true">👋</span>
+  </div>
+</div>
+
+<style>
+  /* ==== layout ==== */
+ #cuco{
+  position:fixed;
+  left:180px;
+  top:50%;          /* 화면 세로 중앙 기준 */
+  margin-top:-100px; /* 캐릭터 높이만큼 약간 위로 조절 (필요하면 숫자 조정 가능) */
+  z-index:9999;
+  display:flex;
+  flex-direction:column-reverse;
+  gap:10px;
+  animation:cuco-float 3s ease-in-out infinite;
+}
+
+  .cuco-wrap{
+    position:relative;
+    width:150px; height:150px;
+  }
+  .cuco-img{
+    width:100%; height:100%;
+    object-fit:contain;
+    filter:drop-shadow(0 8px 18px rgba(0,0,0,.25));
+    transform-origin:60% 85%;
+  }
+  /* ==== bubble ==== */
+  .cuco-bubble{
+    position:relative;
+    max-width:260px;
+    background:rgba(255,255,255,.92);
+    color:#1f2937;
+    border-radius:16px;
+    padding:10px 14px;
+    font-size:14px;
+    line-height:1.35;
+    box-shadow:0 8px 20px rgba(0,0,0,.12);
+    animation:bubble-pulse 2.4s ease-in-out infinite alternate;
+    cursor:pointer;
+  }
+  .cuco-bubble::after{
+    content:"";
+    position:absolute;
+    left:16px; bottom:-10px;
+    border:10px solid transparent;
+    border-top-color:rgba(255,255,255,.92);
+  }
+  /* ==== antenna & hand ==== */
+  .cuco-antenna{
+    position:absolute;
+    top:-6px; left:72px;
+    width:10px; height:10px;
+    background:#ffd166;
+    border-radius:50%;
+    box-shadow:0 0 10px 2px rgba(255,209,102,.7);
+    animation:antenna-bob 1.6s ease-in-out infinite;
+  }
+  .cuco-hand{
+    position:absolute;
+    right:-6px; bottom:28px;
+    font-size:26px;
+    transform-origin:70% 70%;
+    animation:hand-wave 1.8s ease-in-out infinite;
+  }
+  /* ==== blink (squish) ==== */
+  .cuco-blink .cuco-img{
+    animation:cuco-blink-anim .12s ease-in-out 2;
+  }
+  /* ==== keyframes ==== */
+  @keyframes cuco-float{
+    0%,100%{transform:translateY(0)}
+    50%{transform:translateY(-6px)}
+  }
+  @keyframes bubble-pulse{
+    0%{transform:scale(1)}
+    100%{transform:scale(1.03)}
+  }
+  @keyframes antenna-bob{
+    0%,100%{transform:translateY(0)}
+    50%{transform:translateY(-3px)}
+  }
+  @keyframes hand-wave{
+    0%,100%{transform:rotate(0)}
+    50%{transform:rotate(18deg)}
+  }
+  @keyframes cuco-blink-anim{
+    0%{transform:scaleY(1)}
+    50%{transform:scaleY(.94)}
+    100%{transform:scaleY(1)}
+  }
+  @media (max-width:600px){
+    .cuco-wrap{width:120px;height:120px}
+    #cuco{left:12px;bottom:12px}
+  }
+</style>
+
+<script>
+  // ==== CuCo interaction + 외부 제어 API (퀴즈와 연동) ====
+  (function(){
+    const cuco = document.getElementById('cuco');
+    if(!cuco){
+      console.warn('CuCo container not found');
+      return;
+    }
+    const bubble = cuco.querySelector('.cuco-bubble');
+    const wrap   = cuco.querySelector('.cuco-wrap');
+
+    const idleLines = [
+      "데이터 분석 중... 🍪",
+      "달콤 지수 92% 감지!",
+      "오늘은 바삭한 과자가 끌리는 날이에요 😎",
+      "짭짤-달콤 밸런스 계산 중...",
+      "로딩 완료! 과자 예측 시작 👇 과자를 골라줘!",
+    ];
+
+    let i = 0;
+    let timer = null;
+    let mode  = 'idle';  // 'idle' | 'quiz' | 'answer'
+
+    function nextLine(){
+      if(mode !== 'idle') return; // 퀴즈/정답 모드일 땐 자동 멘트 X
+      bubble.textContent = idleLines[i];
+      i = (i+1) % idleLines.length;
+      blink();
+    }
+
+    function startAuto(){
+      stopAuto();
+      if(mode !== 'idle') return;
+      timer = setInterval(nextLine, 3800);
+    }
+    function stopAuto(){
+      if(timer){
+        clearInterval(timer);
+        timer=null;
+      }
+    }
+
+    function blink(){
+      wrap.classList.add('cuco-blink');
+      setTimeout(()=> wrap.classList.remove('cuco-blink'), 240);
+    }
+    (function randomBlink(){
+      const t = 1800 + Math.random()*2600;
+      setTimeout(()=>{
+        blink();
+        randomBlink();
+      }, t);
+    })();
+
+    bubble.addEventListener('click', ()=>{
+      if(mode === 'idle'){
+        nextLine();
+        startAuto();
+      }
+    });
+    cuco.addEventListener('mouseenter', ()=>{
+      if(mode === 'idle'){
+        if(timer){
+          clearInterval(timer);
+          timer=setInterval(nextLine,2300);
+        }
+      }
+    });
+    cuco.addEventListener('mouseleave', ()=>{
+      if(mode === 'idle') startAuto();
+    });
+
+    // 외부에서 사용할 수 있는 API (퀴즈 스크립트가 사용)
+    window.cucoAPI = {
+      setMode(newMode){
+        mode = newMode;
+        if(mode === 'idle'){
+          startAuto();
+        }else{
+          stopAuto();
+        }
+      },
+      setLine(text){
+        bubble.textContent = text;
+      }
+    };
+
+    // 시작은 idle 모드
+    startAuto();
+  })();
+</script>
+
+</body>
+</html>
