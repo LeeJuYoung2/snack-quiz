@@ -1225,18 +1225,21 @@ renderPick();
 </div>
 
 <style>
-  /* ==== layout ==== */
- #cuco{
+ /* ==== layout ==== */
+#cuco{
   position:fixed;
-  left:16px;
-  top:50%;          /* 화면 세로 중앙 기준 */
-  margin-top:-100px; /* 캐릭터 높이만큼 약간 위로 조절 (필요하면 숫자 조정 가능) */
+  left:16px;          /* 화면 왼쪽에서 16px */
+  bottom:20px;        /* 화면 아래에서 20px */
+  top:auto;           /* 위쪽 고정 해제 */
+  margin-top:0;       /* 필요 없으니 0으로 */
+
   z-index:9999;
   display:flex;
   flex-direction:column-reverse;
   gap:10px;
   animation:cuco-float 3s ease-in-out infinite;
 }
+
 
   .cuco-wrap{
     position:relative;
@@ -1316,6 +1319,23 @@ renderPick();
     .cuco-wrap{width:120px;height:120px}
     #cuco{left:12px;bottom:12px}
   }
+  /* ⭐ iPad 가로모드 전용: 쿠코를 왼쪽 아래 "채팅창"처럼 배치 */
+@media screen and (min-width: 700px) and (max-width: 1200px) and (orientation: landscape) {
+
+
+  .cuco-wrap{
+    width: 120px !important;
+    height: 120px !important;
+  }
+
+  .cuco-bubble{
+    max-width: 180px !important;
+    padding: 8px 10px !important;
+    font-size: 13px !important;
+    line-height: 1.32 !important;
+  }
+}
+
 </style>
 
 <script>
